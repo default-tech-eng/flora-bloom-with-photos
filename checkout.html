@@ -633,13 +633,12 @@
   <script>
     // ── CONFIGURABLE BLOCK ──
     const CART = [
-      { id: 'fb-1m', name: 'FloraGuard', desc: '1 Month Supply · 30 Capsules',  price: 3900, qty: 1, swissCrmOfferId: 100 },
-      { id: 'fb-3m', name: 'FloraGuard', desc: '3 Month Supply · 90 Capsules',  price: 9900, was: 11700, qty: 1, swissCrmOfferId: 100 },
-      { id: 'fb-6m', name: 'FloraGuard', desc: '6 Month Supply · 180 Capsules', price: 17900, was: 23400, qty: 1, swissCrmOfferId: 100 },
+      // Update prices and variants to match your actual product setup
+      { id: 'fb-1m', name: 'FloraGuard', desc: '1 Month Supply · 30 Capsules', price: 5499, qty: 1 },
+      { id: 'fb-3m', name: 'FloraGuard', desc: '3 Month Supply · 90 Capsules', price: 11199, qty: 1 },
+      { id: 'fb-6m', name: 'FloraGuard', desc: '6 Month Supply · 180 Capsules', price: 17900, was: 23400, qty: 1 },
     ];
-    // Cloudflare Worker proxy URL — replace WORKER_SUBDOMAIN with your worker's subdomain
-    const CRM_PROXY = 'https://dtc-brand-nu5.vercel.app/api/crm';
-    const WEBHOOK_URL = ''; // Optional extra webhook (Slack, sheet, etc.)
+    const WEBHOOK_URL = ''; // Paste your order endpoint here
     const PROMOS = {
       // 'CODE': { pct: 10, label: '10% off' }
     };
@@ -769,18 +768,6 @@
       return fields.map(id => validate(id)).every(Boolean);
     }
 
-    // ── SWISSCRM HELPERS ──
-    async function crmPost(action, body) {
-      const res = await fetch(`${CRM_PROXY}?action=${action}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || data?.exception || ('HTTP ' + res.status));
-      return data;
-    }
-
     // ── SUBMIT ──
     document.getElementById('checkout-form').addEventListener('submit', async function (e) {
       e.preventDefault();
@@ -791,80 +778,43 @@
       btn.disabled = true;
 
       const item = CART[activeIdx];
-      const email    = document.getElementById('email').value.trim();
-      const fname    = document.getElementById('fname').value.trim();
-      const lname    = document.getElementById('lname').value.trim();
-      const address1 = document.getElementById('address1').value.trim();
-      const city     = document.getElementById('city').value.trim();
-      const postcode = document.getElementById('postcode').value.trim();
-      const country  = document.getElementById('country').value;
-      const cardName = document.getElementById('card-name').value.trim();
-      const cardNum  = document.getElementById('card-num').value.replace(/\s/g, '');
-      const [expM, expY] = document.getElementById('card-exp').value.split('/').map(s => s.trim());
-      const cvc      = document.getElementById('card-cvc').value.trim();
+      const discAmt = Math.round(item.price * discount / 100);
+      const payload = {
+        order_ref: 'FB-' + Date.now(),
+        product: item,
+        total: item.price - discAmt,
+        discount: discAmt,
+        promo: discount > 0 ? document.getElementById('promo-input').value.trim().toUpperCase() : null,
+        customer: {
+          email:    document.getElementById('email').value.trim(),
+          fname:    document.getElementById('fname').value.trim(),
+          lname:    document.getElementById('lname').value.trim(),
+          address1: document.getElementById('address1').value.trim(),
+          address2: document.getElementById('address2').value.trim(),
+          city:     document.getElementById('city').value.trim(),
+          postcode: document.getElementById('postcode').value.trim(),
+          country:  document.getElementById('country').value,
+        },
+        ts: new Date().toISOString(),
+      };
 
       try {
-        // 1. Click → get session token
-        const clickData = await crmPost('click', {
-          click: { campaign_id: 80, ip_address: '0.0.0.0', device: navigator.userAgent.slice(0, 50) }
-        });
-        const sessionToken = clickData.data.attributes.session_token;
-
-        // 2. Lead → attach customer
-        await crmPost('lead', {
-          session_token: sessionToken,
-          lead: {
-            first_name: fname, last_name: lname,
-            email, phone: '',
-            ship_address1: address1,
-            ship_city: city, ship_state: '',
-            ship_country: country,
-            ship_postal_code: postcode,
-            locale: 'en',
-          },
-        });
-
-        // 3. Checkout → charge card
-        const origin = location.origin + location.pathname.replace(/checkout\.html$/, '');
-        const orderData = await crmPost('checkout', {
-          session_token: sessionToken,
-          order: {
-            payment_source_attributes: {
-              card: {
-                name: cardName, number: cardNum,
-                month: expM,
-                year: expY.length === 2 ? '20' + expY : expY,
-                cvv: cvc,
-              },
-              redirect_links: {
-                success_url: origin + 'checkout.html?status=success',
-                failure_url: origin + 'checkout.html?status=failure',
-              },
-              hosted: false,
-            },
-            use_shipping_address: true,
-            campaign_product_ids: [item.swissCrmOfferId],
-          },
-        });
-
-        const orderId = orderData?.data?.attributes?.number || orderData?.data?.id || ('FB-' + Date.now());
-
-        // Optional extra webhook (analytics, sheet, Slack)
         if (WEBHOOK_URL) {
-          fetch(WEBHOOK_URL, {
+          await fetch(WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order_id: orderId, email, product: item.desc }),
-          }).catch(() => {});
+            body: JSON.stringify(payload),
+          });
+        } else {
+          // Simulate network delay when no webhook configured
+          await new Promise(r => setTimeout(r, 1400));
         }
-
-        document.getElementById('order-ref').textContent = 'Order reference: ' + orderId;
+        document.getElementById('order-ref').textContent = 'Order reference: ' + payload.order_ref;
         document.getElementById('success-screen').classList.add('show');
-
-      } catch (err) {
+      } catch {
         btn.classList.remove('loading');
         btn.disabled = false;
-        alert('Payment failed: ' + err.message + '\nPlease check your details and try again.');
+        alert('Something went wrong. Please try again.');
       }
     });
   </script>
