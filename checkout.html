@@ -586,7 +586,7 @@
 
       <!-- Payment -->
       <div class="form-section">
-        <div class="form-section-title">Payment</div>
+        <div class="form-section-title" style="display:flex;align-items:center;">Payment<span style="margin-left:auto;display:inline-flex;gap:6px;align-items:center;"><svg xmlns="http://www.w3.org/2000/svg" width="38" height="24" viewBox="0 0 38 24" role="img" aria-label="Visa" style="height:24px;width:auto;display:block;"><rect width="38" height="24" rx="3" fill="#1A1F71"/><text x="19" y="16.5" font-family="Arial Black,Arial,sans-serif" font-size="9.5" font-weight="900" font-style="italic" text-anchor="middle" fill="#FFFFFF" letter-spacing="0.5">VISA</text></svg><svg xmlns="http://www.w3.org/2000/svg" width="38" height="24" viewBox="0 0 38 24" role="img" aria-label="Mastercard" style="height:24px;width:auto;display:block;"><rect width="38" height="24" rx="3" fill="#FFFFFF" stroke="#E5E5E5"/><circle cx="15" cy="12" r="6" fill="#EB001B"/><circle cx="23" cy="12" r="6" fill="#F79E1B"/><path d="M19 7.6a6 6 0 010 8.8 6 6 0 010-8.8z" fill="#FF5F00"/></svg></span></div>
         <div class="field">
           <label for="card-name">Name on card</label>
           <input type="text" id="card-name" name="card-name" autocomplete="cc-name">
@@ -618,7 +618,6 @@
       </div>
 
       <!-- Pay button -->
-      <div role="group" aria-label="Accepted payment methods" style="display:flex;gap:10px;align-items:center;justify-content:center;padding:10px 0 14px;"><svg xmlns="http://www.w3.org/2000/svg" width="38" height="24" viewBox="0 0 38 24" role="img" aria-label="Visa" style="height:24px;width:auto;display:block;"><rect width="38" height="24" rx="3" fill="#1A1F71"/><text x="19" y="16.5" font-family="Arial Black,Arial,sans-serif" font-size="9.5" font-weight="900" font-style="italic" text-anchor="middle" fill="#FFFFFF" letter-spacing="0.5">VISA</text></svg><svg xmlns="http://www.w3.org/2000/svg" width="38" height="24" viewBox="0 0 38 24" role="img" aria-label="Mastercard" style="height:24px;width:auto;display:block;"><rect width="38" height="24" rx="3" fill="#FFFFFF" stroke="#E5E5E5"/><circle cx="15" cy="12" r="6" fill="#EB001B"/><circle cx="23" cy="12" r="6" fill="#F79E1B"/><path d="M19 7.6a6 6 0 010 8.8 6 6 0 010-8.8z" fill="#FF5F00"/></svg></div>
       <button type="submit" class="pay-btn" id="pay-btn">
         <span class="btn-text">Place Order</span>
         <div class="spinner"></div>
